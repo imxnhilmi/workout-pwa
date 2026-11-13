@@ -87,9 +87,11 @@ export async function importDatabasePayload(
     await db.sessions.clear();
 
     await db.exercises.bulkPut(parsed.exercises);
-    if (Array.isArray(parsed.templates) && parsed.templates.length > 0) {
+    if (Array.isArray(parsed.templates)) {
       await db.templates.clear();
-      await db.templates.bulkPut(parsed.templates);
+      if (parsed.templates.length > 0) {
+        await db.templates.bulkPut(parsed.templates);
+      }
     }
     await db.sessions.bulkPut(parsed.sessions);
   });

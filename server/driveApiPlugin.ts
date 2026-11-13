@@ -17,30 +17,6 @@ const BACKUP_FILE_NAME = 'workout-tracker-db.json';
 const UNCONFIGURED_MSG =
   'Server .env Google Drive credentials (GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, GOOGLE_REFRESH_TOKEN) are not configured yet.';
 
-export function parseDotEnvContent(raw: string): ServerEnvRecord {
-  const result: ServerEnvRecord = {};
-  for (const line of raw.split(/\r?\n/)) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith('#')) {
-      continue;
-    }
-    const eqIndex = trimmed.indexOf('=');
-    if (eqIndex <= 0) {
-      continue;
-    }
-    const key = trimmed.slice(0, eqIndex).trim();
-    let value = trimmed.slice(eqIndex + 1).trim();
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
-      value = value.slice(1, -1);
-    }
-    result[key] = value;
-  }
-  return result;
-}
-
 function resolveDriveCredentials(loadedEnv: ServerEnvRecord) {
   const clientId = (process.env.GOOGLE_CLIENT_ID || loadedEnv.GOOGLE_CLIENT_ID || '').trim();
   const clientSecret = (
