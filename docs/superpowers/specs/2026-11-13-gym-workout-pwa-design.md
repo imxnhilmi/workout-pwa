@@ -50,6 +50,7 @@ Specifically, generic workout trackers fail in a few practical ways:
 - **Platform:** Mobile-first Progressive Web App (installable on iOS Safari and Android Chrome via Web App Manifest + Service Worker).
 - **Visual Theme:** High-contrast dark mode (`#09090b` / `#18181b` zinc surfaces, emerald/amber status accents, minimum `44px` touch targets) built for one-handed thumb reach.
 - **Cost:** 100% free hosting and storage (static hosting + local `IndexedDB` + user's own Google Drive / JSON / clipboard).
+- **Security & Secrets Policy:** Any API keys, passwords, or OAuth secrets must be stored strictly in `.env` (which is git-ignored via `.gitignore`) and kept out of both the GitHub repository and the compiled frontend client bundle (never hardcoded, never committed, and never exposed via `VITE_` client-bundled secret variables).
 - **Version Control:** Git repository connected to `https://github.com/imxnhilmi/workout-pwa.git` with incremental commits on each completed task.
 
 ---
@@ -250,8 +251,8 @@ On first launch, if the database is empty, the app seeds historical sessions cov
      ```
    - Handles variable weights across sets (e.g., `Barbell Reverse Curls: 12.5 kg x 8 / 10 kg x 8, 8 (fail)`), plate-per-side notation (`65 kg/side [197 kg total] x 8, 8, 8`), and assisted bodyweight (`BW - 20.4 kg x 6, 6`).
 8. **Google Drive Backup & Sync Tab:**
-   - **Instant Share / Save to Google Drive:** Uses Web Share API (`navigator.share({ files })`) on mobile or file download on desktop so the user can save `workout-backup-YYYY-MM-DD.json` directly into the Google Drive app with zero configuration.
-   - **Google Drive Cloud Auto-Sync (OAuth 2.0):** Allows signing in with Google (using a user-supplied or env-configured `VITE_GOOGLE_CLIENT_ID`) to read/write `workout-tracker-db.json` directly in Google Drive, showing `"Last synced to Google Drive: [timestamp]"` with 1-tap **Push to Drive** and **Pull from Drive** buttons.
+   - **Instant Share / Save to Google Drive:** Uses Web Share API (`navigator.share({ files })`) on mobile or file download on desktop so the user can save `workout-backup-YYYY-MM-DD.json` directly into the Google Drive app with zero API keys or secrets.
+   - **Google Drive Cloud Auto-Sync (Server-Side `.env` Protected):** Any Google Drive API credentials (`GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `GOOGLE_REFRESH_TOKEN`) live strictly in `.env` on the server/host environment (excluded from Git via `.gitignore` and never bundled into the frontend JS). The frontend talks to a lightweight local/serverless `/api/drive/sync` endpoint so secrets never reach the browser or GitHub.
 
 ---
 
