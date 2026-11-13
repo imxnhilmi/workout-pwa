@@ -37,6 +37,7 @@ describe('Dexie WorkoutDatabase, Seeding, and Type-to-Swap', () => {
     expect(upper?.defaultExerciseIds).toHaveLength(6);
     expect(lower?.defaultExerciseIds).toHaveLength(7);
     expect(arms?.defaultExerciseIds).toHaveLength(6);
+    expect(arms?.defaultExerciseIds[0]).toBe('tricep-pushdown-dual-cable');
   });
 
   it('is idempotent when ensureSeeded is called multiple times', async () => {

@@ -386,7 +386,7 @@ export const DEFAULT_TEMPLATES: WorkoutTemplate[] = [
     id: 'arms',
     name: 'Arms',
     defaultExerciseIds: [
-      'tricep-pushdown-single-cable',
+      'tricep-pushdown-dual-cable',
       'cable-hammer-curls',
       'tricep-overhead-extensions',
       'unilateral-cable-lateral-raises',

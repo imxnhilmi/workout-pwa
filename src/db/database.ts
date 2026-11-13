@@ -53,12 +53,14 @@ function slugifyExerciseId(name: string): string {
 export async function ensureSeeded(): Promise<void> {
   const exerciseCount = await db.exercises.count();
   if (exerciseCount > 0) {
+    await db.templates.bulkPut(DEFAULT_TEMPLATES);
     return;
   }
 
   await db.transaction('rw', db.exercises, db.templates, db.sessions, async () => {
     const currentCount = await db.exercises.count();
     if (currentCount > 0) {
+      await db.templates.bulkPut(DEFAULT_TEMPLATES);
       return;
     }
     await db.exercises.bulkPut(INITIAL_EXERCISES);

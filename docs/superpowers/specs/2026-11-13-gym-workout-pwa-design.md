@@ -177,7 +177,7 @@ export interface WorkoutTemplate {
 7. **Hip Extensions (Lower Back Extension)** (`2 working sets`, standard load)
 
 #### 3. Arms Default Template (`arms`)
-1. **Tricep Pushdown (Single Cable)** (`3 working sets`, standard load, quick swap chip: *Tricep Pushdown (Dual Cable)*)
+1. **Tricep Pushdown (Dual Cable)** (`3 working sets`, standard load, quick swap chip: *Tricep Pushdown (Single Cable)*)
 2. **Cable Hammer Curls** (`3 working sets`, standard load)
 3. **Tricep Overhead Extensions** (`2 working sets`, standard load)
 4. **Unilateral Cable Lateral Raises** (`3 working sets`, unilateral L/R)
