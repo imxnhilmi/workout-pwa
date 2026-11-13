@@ -63,11 +63,11 @@
   - `computeEffectiveLoadScore(weightKg: number, loadMode: LoadMode, baseSledKg?: number): number`
   - `estimateOneRepMax(weightKg: number, reps: number, loadMode: LoadMode, baseSledKg?: number): number`
 
-- [ ] **Step 1: Scaffold Vite + React + TypeScript + Tailwind + Vitest project and create `.env.example` & `src/types/workout.ts`**
+- [x] **Step 1: Scaffold Vite + React + TypeScript + Tailwind + Vitest project and create `.env.example` & `src/types/workout.ts`**
 
 Create `.env.example` with blank server-only placeholders (`GOOGLE_CLIENT_ID=`, `GOOGLE_CLIENT_SECRET=`, `GOOGLE_REFRESH_TOKEN=`, `GOOGLE_DRIVE_FOLDER_ID=`) and define the exact interfaces from Spec §5.2 in `src/types/workout.ts`.
 
-- [ ] **Step 2: Write the failing unit tests in `src/domain/__tests__/calculations.test.ts`**
+- [x] **Step 2: Write the failing unit tests in `src/domain/__tests__/calculations.test.ts`**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -136,16 +136,16 @@ describe('calculations domain engine', () => {
 });
 ```
 
-- [ ] **Step 3: Run test to verify it fails**
+- [x] **Step 3: Run test to verify it fails**
 
 Run: `npx vitest run src/domain/__tests__/calculations.test.ts`
 Expected: FAIL with module `../calculations` not found.
 
-- [ ] **Step 4: Implement `src/domain/calculations.ts`**
+- [x] **Step 4: Implement `src/domain/calculations.ts`**
 
 Implement `computeTotalWeightKg`, `createDefaultSetTags`, `isReadyToProgress` (filtering working sets to `tag !== 'warmup' && tag !== 'dropset' && completed`), `computeEffectiveLoadScore` (returning `-weightKg` for `assisted_bw` so `15 > 20.4`), and `estimateOneRepMax`.
 
-- [ ] **Step 5: Run test to verify it passes and commit**
+- [x] **Step 5: Run test to verify it passes and commit**
 
 Run: `npx vitest run src/domain/__tests__/calculations.test.ts`
 Expected: PASS (4 passed)
@@ -170,7 +170,7 @@ git push
   - `formatExerciseBlockLine(block: WorkoutExerciseBlock): string`
   - `formatSessionAsText(session: WorkoutSession): string`
 
-- [ ] **Step 1: Write the failing tests in `src/domain/__tests__/textExport.test.ts`**
+- [x] **Step 1: Write the failing tests in `src/domain/__tests__/textExport.test.ts`**
 
 ```ts
 import { describe, expect, it } from 'vitest';
@@ -234,16 +234,16 @@ describe('Plain-text note log exporter', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/domain/__tests__/textExport.test.ts`
 Expected: FAIL with module `../textExport` not found.
 
-- [ ] **Step 3: Implement `src/domain/textExport.ts`**
+- [x] **Step 3: Implement `src/domain/textExport.ts`**
 
 Group consecutive completed working sets by `weightKg`, format each group according to `loadMode` (`X kg`, `X kg/side (Y kg total)`, `X kg/side`, or `BW - X kg`), format unilateral sets as `${repsLeft}L/${repsRight}R`, and append `(fail)` if any working set is tagged `'fail'`.
 
-- [ ] **Step 4: Run test to verify it passes and commit**
+- [x] **Step 4: Run test to verify it passes and commit**
 
 Run: `npx vitest run src/domain/__tests__/textExport.test.ts`
 Expected: PASS
@@ -277,7 +277,7 @@ git push
   - `setBlockUnilateralMode(sessionId: string, blockId: string, isUnilateral: boolean): Promise<WorkoutSession>`
   - `getExerciseHistoryAndPB(exerciseId: string): Promise<{ lastBlock?: WorkoutExerciseBlock; pbWeightKg?: number; pbSummary?: string; readyToProgress: boolean }>`
 
-- [ ] **Step 1: Write failing tests in `src/db/__tests__/database.test.ts`**
+- [x] **Step 1: Write failing tests in `src/db/__tests__/database.test.ts`**
 
 ```ts
 import 'fake-indexeddb/auto';
@@ -366,16 +366,16 @@ describe('Dexie WorkoutDatabase, Seeding, and Type-to-Swap', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/db/__tests__/database.test.ts`
 Expected: FAIL with module `../database` not found.
 
-- [ ] **Step 3: Implement `src/db/seedData.ts` and `src/db/database.ts`**
+- [x] **Step 3: Implement `src/db/seedData.ts` and `src/db/database.ts`**
 
 Implement `INITIAL_EXERCISES`, `DEFAULT_TEMPLATES`, and `INITIAL_SESSIONS` (including both baseline sessions e.g. `17.5 kg` Incline DB Press / `40 kg/side` Leg Press and latest PB sessions e.g. `22.5 kg x 7, 7` Incline DB Press / `65 kg/side x 8, 8, 8` Leg Press so charts show multi-point progression immediately). In `swapExerciseInSessionBlock`, trim and case-insensitively match existing exercises by `id` or `name` before creating a new `Exercise` record if no match exists.
 
-- [ ] **Step 4: Run test to verify it passes and commit**
+- [x] **Step 4: Run test to verify it passes and commit**
 
 Run: `npx vitest run src/db/__tests__/database.test.ts`
 Expected: PASS
@@ -407,7 +407,7 @@ git push
 - Produces in `server/driveApiPlugin.ts`:
   - `driveApiVitePlugin(): Plugin` handling `GET /api/drive/status`, `POST /api/drive/push`, `POST /api/drive/pull` using `process.env.GOOGLE_CLIENT_ID`, `process.env.GOOGLE_CLIENT_SECRET`, and `process.env.GOOGLE_REFRESH_TOKEN` on the server side only.
 
-- [ ] **Step 1: Write failing tests in `src/services/__tests__/backupService.test.ts`**
+- [x] **Step 1: Write failing tests in `src/services/__tests__/backupService.test.ts`**
 
 ```ts
 import 'fake-indexeddb/auto';
@@ -444,16 +444,16 @@ describe('Backup & Restore Service', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/services/__tests__/backupService.test.ts`
 Expected: FAIL with module `../backupService` not found.
 
-- [ ] **Step 3: Implement `src/services/backupService.ts` and `server/driveApiPlugin.ts`**
+- [x] **Step 3: Implement `src/services/backupService.ts` and `server/driveApiPlugin.ts`**
 
 Implement transactional export/import in `src/services/backupService.ts`, native `navigator.share({ files: [file] })` fallback to anchor download for zero-config Google Drive saving, and `server/driveApiPlugin.ts` reading OAuth credentials exclusively from `process.env` on the server.
 
-- [ ] **Step 4: Run test to verify it passes and commit**
+- [x] **Step 4: Run test to verify it passes and commit**
 
 Run: `npx vitest run src/services/__tests__/backupService.test.ts`
 Expected: PASS
@@ -487,7 +487,7 @@ git push
   3. **History & Notes (`HistoryExportView`):** Completed sessions list with 1-tap **"Copy as Text Log"** formatted in the user's plain-text note style.
   4. **Drive & Backup (`DriveBackupPanel`):** 1-tap **Save/Share to Google Drive**, JSON Export/Import, and `.env`-backed Google Drive Cloud Sync status & Push/Pull triggers.
 
-- [ ] **Step 1: Write the failing UI integration test in `src/components/__tests__/App.integration.test.tsx`**
+- [x] **Step 1: Write the failing UI integration test in `src/components/__tests__/App.integration.test.tsx`**
 
 ```tsx
 import 'fake-indexeddb/auto';
@@ -536,21 +536,21 @@ describe('Gym Workout Tracker PWA UI Integration', () => {
 });
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `npx vitest run src/components/__tests__/App.integration.test.tsx`
 Expected: FAIL
 
-- [ ] **Step 3: Implement the UI components and `src/App.tsx`**
+- [x] **Step 3: Implement the UI components and `src/App.tsx`**
 
 Build all components in `src/components/` and wire `src/App.tsx` with `navigator.storage.persist()` on mount.
 
-- [ ] **Step 4: Run full test suite and production PWA build to verify everything passes**
+- [x] **Step 4: Run full test suite and production PWA build to verify everything passes**
 
 Run: `npx vitest run && npm run build`
 Expected: All tests PASS and Vite PWA build outputs `dist/sw.js` and `dist/manifest.webmanifest` with zero TypeScript errors.
 
-- [ ] **Step 5: Commit and push to GitHub**
+- [x] **Step 5: Commit and push to GitHub**
 
 ```bash
 git add .
