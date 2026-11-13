@@ -57,10 +57,15 @@ describe('calculations domain engine', () => {
     ).toBe(false);
   });
 
-  it('ranks lower assistance offset as stronger for assisted_bw (Review Focus #3)', () => {
+  it('ranks lower assistance offset as stronger for assisted_bw and increases estimated 1RM when reps increase (Review Focus #3 & Final Fix #1)', () => {
     expect(computeEffectiveLoadScore(15, 'assisted_bw')).toBeGreaterThan(
       computeEffectiveLoadScore(20.4, 'assisted_bw')
     );
     expect(estimateOneRepMax(60, 8, 'standard')).toBeCloseTo(76, 1);
+    expect(estimateOneRepMax(20, 6, 'assisted_bw')).toBeCloseTo(-16.7, 1);
+    expect(estimateOneRepMax(20, 1, 'assisted_bw')).toBe(-20);
+    expect(estimateOneRepMax(20, 8, 'assisted_bw')).toBeGreaterThan(
+      estimateOneRepMax(20, 6, 'assisted_bw')
+    );
   });
 });

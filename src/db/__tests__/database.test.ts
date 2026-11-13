@@ -112,6 +112,18 @@ describe('Dexie WorkoutDatabase, Seeding, and Type-to-Swap', () => {
     expect(legPressStats.readyToProgress).toBe(true);
     expect(legPressStats.historyPoints[0].topWeightKg).toBe(40);
     expect(legPressStats.historyPoints[legPressStats.historyPoints.length - 1].topWeightKg).toBe(65);
+
+    const assistedPullUp = await db.exercises
+      .where('name')
+      .equals('Assisted Pull-Up Machine')
+      .first();
+    const assistedStats = await getExerciseHistoryAndPB(assistedPullUp!.id);
+    expect(assistedStats.pbWeightKg).toBe(20.4);
+    expect(assistedStats.historyPoints.length).toBeGreaterThanOrEqual(2);
+    expect(assistedStats.historyPoints[0].estimated1RM).toBeLessThan(0);
+    expect(
+      assistedStats.historyPoints[assistedStats.historyPoints.length - 1].estimated1RM
+    ).toBeGreaterThan(assistedStats.historyPoints[0].estimated1RM);
   });
 
   it('supports updating sets, adding/removing sets, adding exercise blocks, and completing a session', async () => {

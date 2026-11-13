@@ -1,5 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Search, X, ArrowLeftRight, PlusCircle, Sparkles, SplitSquareHorizontal } from 'lucide-react';
+import type { ExerciseHistoryAndPB } from '../db/database';
 import type { Exercise } from '../types/workout';
 
 interface SwapExerciseModalProps {
@@ -9,6 +10,7 @@ interface SwapExerciseModalProps {
   currentExerciseId?: string;
   initialUnilateral?: boolean;
   exercises: Exercise[];
+  statsMap?: Record<string, ExerciseHistoryAndPB>;
   onClose: () => void;
   onSelectExercise: (targetQueryOrExerciseId: string, overrideUnilateral?: boolean) => Promise<void> | void;
 }
@@ -20,6 +22,7 @@ export const SwapExerciseModal: React.FC<SwapExerciseModalProps> = ({
   currentExerciseId,
   initialUnilateral = false,
   exercises,
+  statsMap,
   onClose,
   onSelectExercise,
 }) => {
@@ -74,6 +77,12 @@ export const SwapExerciseModal: React.FC<SwapExerciseModalProps> = ({
 
   const effectiveUnilateralPreview = unilateralChoice ?? initialUnilateral;
 
+  const handleDismiss = () => {
+    setQuery('');
+    setUnilateralChoice(undefined);
+    onClose();
+  };
+
   const handleChoose = async (target: string, defaultUnilateral?: boolean) => {
     const finalUnilateral =
       unilateralChoice !== undefined ? unilateralChoice : defaultUnilateral;
@@ -115,8 +124,8 @@ export const SwapExerciseModal: React.FC<SwapExerciseModalProps> = ({
           </div>
           <button
             type="button"
-            onClick={onClose}
-            className="flex h-9 w-9 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-800/60 text-zinc-400 hover:text-white"
+            onClick={handleDismiss}
+            className="flex h-11 w-11 items-center justify-center rounded-lg border border-zinc-800 bg-zinc-800/60 text-zinc-400 hover:text-white"
             aria-label="Close modal"
           >
             <X className="h-4 w-4" />
@@ -193,16 +202,24 @@ export const SwapExerciseModal: React.FC<SwapExerciseModalProps> = ({
                 Suggested Alternatives
               </p>
               <div className="flex flex-wrap gap-2">
-                {suggestedExercises.map((sug) => (
-                  <button
-                    key={sug.id}
-                    type="button"
-                    onClick={() => handleChoose(sug.id, sug.isUnilateral)}
-                    className="rounded-xl border border-zinc-700 bg-zinc-800/90 px-3 py-2 text-xs font-medium text-zinc-200 hover:border-emerald-500/60 hover:text-emerald-300 active:bg-zinc-700"
-                  >
-                    {sug.name}
-                  </button>
-                ))}
+                {suggestedExercises.map((sug) => {
+                  const sugStats = statsMap?.[sug.id];
+                  return (
+                    <button
+                      key={sug.id}
+                      type="button"
+                      onClick={() => handleChoose(sug.id, sug.isUnilateral)}
+                      className="flex flex-col items-start rounded-xl border border-zinc-700 bg-zinc-800/90 px-3 py-2 text-left text-xs font-medium text-zinc-200 hover:border-emerald-500/60 hover:text-emerald-300 active:bg-zinc-700"
+                    >
+                      <span>{sug.name}</span>
+                      {sugStats?.pbSummary && (
+                        <span className="mt-0.5 font-mono text-[10px] text-emerald-400">
+                          PB: {sugStats.pbSummary}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
               </div>
             </div>
           )}
@@ -213,34 +230,51 @@ export const SwapExerciseModal: React.FC<SwapExerciseModalProps> = ({
               Exercise Library ({filteredExercises.length})
             </p>
             <div className="space-y-1.5">
-              {filteredExercises.map((ex) => (
-                <button
-                  key={ex.id}
-                  type="button"
-                  onClick={() => handleChoose(ex.id, ex.isUnilateral)}
-                  className="flex w-full items-center justify-between rounded-xl border border-zinc-800/80 bg-zinc-950/60 px-3.5 py-2.5 text-left hover:border-zinc-700 hover:bg-zinc-800/60 transition"
-                >
-                  <div className="min-w-0 pr-2">
-                    <div className="truncate text-sm font-medium text-zinc-100">
-                      {ex.name}
-                    </div>
-                    <div className="flex items-center gap-2 text-[11px] text-zinc-400">
-                      <span className="uppercase">{ex.category}</span>
-                      <span>•</span>
-                      <span>{ex.isUnilateral ? 'Unilateral L/R' : 'Bilateral'}</span>
-                      {ex.loadMode === 'plate_per_side' && (
-                        <>
-                          <span>•</span>
-                          <span>+{ex.baseSledKg ?? 67} kg sled</span>
-                        </>
+              {filteredExercises.map((ex) => {
+                const exStats = statsMap?.[ex.id];
+                const lastWeight = exStats?.lastBlock?.sets[0]?.weightKg;
+                return (
+                  <button
+                    key={ex.id}
+                    type="button"
+                    onClick={() => handleChoose(ex.id, ex.isUnilateral)}
+                    className="flex w-full items-center justify-between rounded-xl border border-zinc-800/80 bg-zinc-950/60 px-3.5 py-2.5 text-left hover:border-zinc-700 hover:bg-zinc-800/60 transition"
+                  >
+                    <div className="min-w-0 pr-2">
+                      <div className="truncate text-sm font-medium text-zinc-100">
+                        {ex.name}
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-[11px] text-zinc-400">
+                        <span className="uppercase">{ex.category}</span>
+                        <span>•</span>
+                        <span>{ex.isUnilateral ? 'Unilateral L/R' : 'Bilateral'}</span>
+                        {ex.loadMode === 'plate_per_side' && (
+                          <>
+                            <span>•</span>
+                            <span>+{ex.baseSledKg ?? 67} kg sled</span>
+                          </>
+                        )}
+                        {lastWeight !== undefined && (
+                          <>
+                            <span>•</span>
+                            <span className="font-mono text-zinc-300">
+                              Last: {lastWeight} kg
+                            </span>
+                          </>
+                        )}
+                      </div>
+                      {exStats?.pbSummary && (
+                        <div className="mt-0.5 truncate font-mono text-[11px] text-emerald-400">
+                          PB: {exStats.pbSummary}
+                        </div>
                       )}
                     </div>
-                  </div>
-                  <span className="shrink-0 rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-xs font-medium text-zinc-300">
-                    Select
-                  </span>
-                </button>
-              ))}
+                    <span className="shrink-0 rounded-lg border border-zinc-700 bg-zinc-800 px-2.5 py-1 text-xs font-medium text-zinc-300">
+                      Select
+                    </span>
+                  </button>
+                );
+              })}
             </div>
           </div>
         </div>

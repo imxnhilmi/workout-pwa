@@ -70,5 +70,8 @@ export function estimateOneRepMax(
   if (reps === 1) {
     return effectiveWeight;
   }
+  if (loadMode === 'assisted_bw') {
+    return Math.round((effectiveWeight / (1 + reps / 30)) * 10) / 10;
+  }
   return Math.round(effectiveWeight * (1 + reps / 30) * 10) / 10;
 }

@@ -52,6 +52,7 @@ export const ExerciseBlockCard: React.FC<ExerciseBlockCardProps> = ({
     INCREMENT_STEPS.includes(defaultIncrementKg) ? defaultIncrementKg : 2.5
   );
   const [historyInfo, setHistoryInfo] = useState<ExerciseHistoryAndPB | null>(null);
+  const [draftValues, setDraftValues] = useState<Record<string, string>>({});
 
   useEffect(() => {
     let mounted = true;
@@ -70,7 +71,52 @@ export const ExerciseBlockCard: React.FC<ExerciseBlockCardProps> = ({
   const currentReady = isReadyToProgress(block);
   const showReadyBadge = Boolean(historyInfo?.readyToProgress || currentReady);
 
+  const clearDraftField = (setId: string, field: string) => {
+    const key = `${setId}-${field}`;
+    setDraftValues((prev) => {
+      if (!(key in prev)) return prev;
+      const next = { ...prev };
+      delete next[key];
+      return next;
+    });
+  };
+
+  const getNumericInputValue = (setId: string, field: string, fallback: number): string | number => {
+    const key = `${setId}-${field}`;
+    return key in draftValues ? draftValues[key] : fallback;
+  };
+
+  const handleNumericInputChange = (
+    setId: string,
+    field: 'weightKg' | 'reps' | 'repsLeft' | 'repsRight',
+    raw: string,
+    isFloat: boolean
+  ) => {
+    const key = `${setId}-${field}`;
+    setDraftValues((prev) => ({ ...prev, [key]: raw }));
+    if (raw.trim() === '') {
+      return;
+    }
+    const parsed = isFloat ? parseFloat(raw) : parseInt(raw, 10);
+    if (!Number.isNaN(parsed)) {
+      onUpdateSet(block.id, setId, { [field]: Math.max(0, parsed) });
+    }
+  };
+
+  const handleNumericInputBlur = (
+    setId: string,
+    field: 'weightKg' | 'reps' | 'repsLeft' | 'repsRight'
+  ) => {
+    const key = `${setId}-${field}`;
+    const raw = draftValues[key];
+    clearDraftField(setId, field);
+    if (raw !== undefined && raw.trim() === '') {
+      onUpdateSet(block.id, setId, { [field]: 0 });
+    }
+  };
+
   const adjustWeight = (set: WorkoutSetLog, delta: number) => {
+    clearDraftField(set.id, 'weightKg');
     const nextWeight = Math.max(0, Math.round((set.weightKg + delta) * 100) / 100);
     onUpdateSet(block.id, set.id, { weightKg: nextWeight });
   };
@@ -80,6 +126,7 @@ export const ExerciseBlockCard: React.FC<ExerciseBlockCardProps> = ({
     field: 'reps' | 'repsLeft' | 'repsRight',
     delta: number
   ) => {
+    clearDraftField(set.id, field);
     const currentVal = set[field] ?? block.targetRepMax;
     const nextVal = Math.max(0, currentVal + delta);
     onUpdateSet(block.id, set.id, { [field]: nextVal });
@@ -143,7 +190,7 @@ export const ExerciseBlockCard: React.FC<ExerciseBlockCardProps> = ({
             type="button"
             aria-pressed={block.isUnilateral}
             onClick={() => onToggleUnilateral(block.id, !block.isUnilateral)}
-            className={`inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
+            className={`inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition ${
               block.isUnilateral
                 ? 'border-emerald-500/60 bg-emerald-500/20 text-emerald-300'
                 : 'border-zinc-700 bg-zinc-800/80 text-zinc-300 hover:border-zinc-600'
@@ -157,7 +204,7 @@ export const ExerciseBlockCard: React.FC<ExerciseBlockCardProps> = ({
           <button
             type="button"
             onClick={() => onOpenSwap(block)}
-            className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:border-emerald-500/50 hover:text-emerald-300 active:bg-zinc-700"
+            className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-zinc-700 bg-zinc-800 px-3 py-1.5 text-xs font-semibold text-zinc-200 hover:border-emerald-500/50 hover:text-emerald-300 active:bg-zinc-700"
           >
             <ArrowLeftRight className="h-3.5 w-3.5 text-emerald-400" />
             <span>Swap</span>
@@ -288,13 +335,11 @@ export const ExerciseBlockCard: React.FC<ExerciseBlockCardProps> = ({
                     <input
                       type="number"
                       step="any"
-                      value={set.weightKg}
-                      onChange={(e) => {
-                        const parsed = parseFloat(e.target.value);
-                        onUpdateSet(block.id, set.id, {
-                          weightKg: Number.isNaN(parsed) ? 0 : Math.max(0, parsed),
-                        });
-                      }}
+                      value={getNumericInputValue(set.id, 'weightKg', set.weightKg)}
+                      onChange={(e) =>
+                        handleNumericInputChange(set.id, 'weightKg', e.target.value, true)
+                      }
+                      onBlur={() => handleNumericInputBlur(set.id, 'weightKg')}
                       className="h-11 w-20 rounded-xl border border-zinc-700 bg-zinc-900 text-center font-mono text-base font-bold text-zinc-100 focus:border-emerald-500 focus:outline-none"
                       aria-label={`Set ${set.setNumber} weight`}
                     />
@@ -337,13 +382,15 @@ export const ExerciseBlockCard: React.FC<ExerciseBlockCardProps> = ({
                         </button>
                         <input
                           type="number"
-                          value={set.repsLeft ?? block.targetRepMax}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value, 10);
-                            onUpdateSet(block.id, set.id, {
-                              repsLeft: Number.isNaN(val) ? 0 : Math.max(0, val),
-                            });
-                          }}
+                          value={getNumericInputValue(
+                            set.id,
+                            'repsLeft',
+                            set.repsLeft ?? block.targetRepMax
+                          )}
+                          onChange={(e) =>
+                            handleNumericInputChange(set.id, 'repsLeft', e.target.value, false)
+                          }
+                          onBlur={() => handleNumericInputBlur(set.id, 'repsLeft')}
                           className="h-11 w-14 rounded-xl border border-zinc-700 bg-zinc-900 text-center font-mono text-base font-bold text-zinc-100 focus:border-emerald-500 focus:outline-none"
                           aria-label={`Set ${set.setNumber} Left Reps`}
                         />
@@ -373,13 +420,15 @@ export const ExerciseBlockCard: React.FC<ExerciseBlockCardProps> = ({
                         </button>
                         <input
                           type="number"
-                          value={set.repsRight ?? block.targetRepMax}
-                          onChange={(e) => {
-                            const val = parseInt(e.target.value, 10);
-                            onUpdateSet(block.id, set.id, {
-                              repsRight: Number.isNaN(val) ? 0 : Math.max(0, val),
-                            });
-                          }}
+                          value={getNumericInputValue(
+                            set.id,
+                            'repsRight',
+                            set.repsRight ?? block.targetRepMax
+                          )}
+                          onChange={(e) =>
+                            handleNumericInputChange(set.id, 'repsRight', e.target.value, false)
+                          }
+                          onBlur={() => handleNumericInputBlur(set.id, 'repsRight')}
                           className="h-11 w-14 rounded-xl border border-zinc-700 bg-zinc-900 text-center font-mono text-base font-bold text-zinc-100 focus:border-emerald-500 focus:outline-none"
                           aria-label={`Set ${set.setNumber} Right Reps`}
                         />
@@ -410,13 +459,15 @@ export const ExerciseBlockCard: React.FC<ExerciseBlockCardProps> = ({
                       </button>
                       <input
                         type="number"
-                        value={set.reps ?? block.targetRepMax}
-                        onChange={(e) => {
-                          const val = parseInt(e.target.value, 10);
-                          onUpdateSet(block.id, set.id, {
-                            reps: Number.isNaN(val) ? 0 : Math.max(0, val),
-                          });
-                        }}
+                        value={getNumericInputValue(
+                          set.id,
+                          'reps',
+                          set.reps ?? block.targetRepMax
+                        )}
+                        onChange={(e) =>
+                          handleNumericInputChange(set.id, 'reps', e.target.value, false)
+                        }
+                        onBlur={() => handleNumericInputBlur(set.id, 'reps')}
                         className="h-11 w-16 rounded-xl border border-zinc-700 bg-zinc-900 text-center font-mono text-base font-bold text-zinc-100 focus:border-emerald-500 focus:outline-none"
                         aria-label={`Set ${set.setNumber} Reps`}
                       />
@@ -465,7 +516,7 @@ export const ExerciseBlockCard: React.FC<ExerciseBlockCardProps> = ({
         <button
           type="button"
           onClick={() => onAddSet(block.id)}
-          className="inline-flex min-h-[38px] items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:border-zinc-700 hover:text-white"
+          className="inline-flex min-h-[44px] items-center gap-1.5 rounded-xl border border-zinc-800 bg-zinc-950 px-3 py-1.5 text-xs font-semibold text-zinc-300 hover:border-zinc-700 hover:text-white"
         >
           <Plus className="h-3.5 w-3.5 text-emerald-400" />
           <span>Add Set</span>

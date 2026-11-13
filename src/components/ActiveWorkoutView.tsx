@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   CheckCircle2,
   ClipboardCheck,
@@ -14,11 +14,13 @@ import {
   addSetToBlock,
   completeWorkoutSession,
   db,
+  getAllExercisesHistoryAndPB,
   removeSetFromBlock,
   setBlockUnilateralMode,
   startSessionFromTemplate,
   swapExerciseInSessionBlock,
   updateSetInBlock,
+  type ExerciseHistoryAndPB,
 } from '../db/database';
 import { formatSessionAsText } from '../domain/textExport';
 import type {
@@ -55,11 +57,54 @@ export const ActiveWorkoutView: React.FC<ActiveWorkoutViewProps> = ({
   const [timerTotal, setTimerTotal] = useState<number>(120);
   const [timerExerciseName, setTimerExerciseName] = useState<string | undefined>(undefined);
 
-  const [sessionNotes, setSessionNotes] = useState<string>('');
+  const [sessionNotes, setSessionNotes] = useState<string>(
+    activeSession?.sessionNotes ?? ''
+  );
   const [recentlyCompleted, setRecentlyCompleted] = useState<WorkoutSession | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [statsMap, setStatsMap] = useState<Record<string, ExerciseHistoryAndPB>>({});
+
+  useEffect(() => {
+    setSessionNotes(activeSession?.sessionNotes ?? '');
+  }, [activeSession?.id, activeSession?.sessionNotes]);
+
+  useEffect(() => {
+    let mounted = true;
+    getAllExercisesHistoryAndPB(exercises)
+      .then((map) => {
+        if (mounted) {
+          setStatsMap(map);
+        }
+      })
+      .catch(() => {
+        // Ignore if database is closed during test teardown
+      });
+    return () => {
+      mounted = false;
+    };
+  }, [exercises, activeSession?.id]);
 
   const exerciseMap = new Map(exercises.map((e) => [e.id, e]));
+
+  const handleSessionNotesChange = (nextNotes: string) => {
+    setSessionNotes(nextNotes);
+    if (activeSession) {
+      activeSession.sessionNotes = nextNotes;
+      void db.sessions
+        .update(activeSession.id, { sessionNotes: nextNotes })
+        .catch(() => {});
+    }
+  };
+
+  const handleSessionNotesBlur = async () => {
+    if (!activeSession) return;
+    try {
+      await db.sessions.update(activeSession.id, { sessionNotes });
+      await onSessionUpdated();
+    } catch {
+      // Ignore if database is closed
+    }
+  };
 
   const handleStartTemplate = async (templateId: 'upper' | 'lower' | 'arms' | 'custom') => {
     setRecentlyCompleted(null);
@@ -394,7 +439,8 @@ export const ActiveWorkoutView: React.FC<ActiveWorkoutViewProps> = ({
             id="session-notes-input"
             rows={2}
             value={sessionNotes}
-            onChange={(e) => setSessionNotes(e.target.value)}
+            onChange={(e) => handleSessionNotesChange(e.target.value)}
+            onBlur={handleSessionNotesBlur}
             placeholder="E.g. Busy cable crossover today, felt strong on rows..."
             className="w-full rounded-xl border border-zinc-800 bg-zinc-950 p-3 text-xs text-zinc-200 placeholder-zinc-500 focus:border-emerald-500 focus:outline-none"
           />
@@ -409,6 +455,7 @@ export const ActiveWorkoutView: React.FC<ActiveWorkoutViewProps> = ({
         currentExerciseId={swapModalState.block?.exerciseId}
         initialUnilateral={swapModalState.block?.isUnilateral ?? false}
         exercises={exercises}
+        statsMap={statsMap}
         onClose={() => setSwapModalState({ isOpen: false, mode: 'swap' })}
         onSelectExercise={handleSelectSwapOrAdd}
       />

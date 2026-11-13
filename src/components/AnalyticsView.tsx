@@ -1,6 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { Award, BarChart3, Search, TrendingUp } from 'lucide-react';
-import { getExerciseHistoryAndPB, type ExerciseHistoryAndPB } from '../db/database';
+import { getAllExercisesHistoryAndPB, type ExerciseHistoryAndPB } from '../db/database';
 import type { Category, Exercise } from '../types/workout';
 
 interface AnalyticsViewProps {
@@ -20,22 +20,15 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ exercises }) => {
 
   useEffect(() => {
     let mounted = true;
-    async function loadAllHistory() {
-      try {
-        const entries = await Promise.all(
-          exercises.map(async (ex) => {
-            const info = await getExerciseHistoryAndPB(ex.id);
-            return [ex.id, info] as const;
-          })
-        );
+    getAllExercisesHistoryAndPB(exercises)
+      .then((map) => {
         if (mounted) {
-          setPbMap(Object.fromEntries(entries));
+          setPbMap(map);
         }
-      } catch {
+      })
+      .catch(() => {
         // Ignore if database is closed during test teardown
-      }
-    }
-    loadAllHistory();
+      });
     return () => {
       mounted = false;
     };

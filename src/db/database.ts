@@ -85,12 +85,12 @@ export interface ExerciseHistoryAndPB {
 }
 
 export async function getExerciseHistoryAndPB(
-  exerciseId: string
+  exerciseId: string,
+  preloadedCompletedSessions?: WorkoutSession[]
 ): Promise<ExerciseHistoryAndPB> {
-  const completedSessions = await db.sessions
-    .where('status')
-    .equals('completed')
-    .toArray();
+  const completedSessions = preloadedCompletedSessions
+    ? [...preloadedCompletedSessions]
+    : await db.sessions.where('status').equals('completed').toArray();
 
   completedSessions.sort((a, b) => {
     const dateA = a.completedAt ?? a.startedAt;
@@ -123,7 +123,7 @@ export async function getExerciseHistoryAndPB(
 
       let blockBestScore = -Infinity;
       let blockTopWeightKg = activeSets[0].weightKg;
-      let blockMax1RM = 0;
+      let blockMax1RM = -Infinity;
       let blockVolumeKg = 0;
 
       for (const set of activeSets) {
@@ -167,11 +167,13 @@ export async function getExerciseHistoryAndPB(
         blockVolumeKg += totalLoad * avgReps;
       }
 
+      const resolvedMax1RM = Number.isFinite(blockMax1RM) ? blockMax1RM : 0;
+
       historyPoints.push({
         date: (session.completedAt ?? session.startedAt).slice(0, 10),
         sessionId: session.id,
         topWeightKg: blockTopWeightKg,
-        estimated1RM: Math.round(blockMax1RM * 10) / 10,
+        estimated1RM: Math.round(resolvedMax1RM * 10) / 10,
         totalVolumeKg: Math.round(blockVolumeKg * 10) / 10,
         block,
       });
@@ -195,6 +197,24 @@ export async function getExerciseHistoryAndPB(
     readyToProgress,
     historyPoints,
   };
+}
+
+export async function getAllExercisesHistoryAndPB(
+  exercises: Exercise[]
+): Promise<Record<string, ExerciseHistoryAndPB>> {
+  const completedSessions = await db.sessions
+    .where('status')
+    .equals('completed')
+    .toArray();
+
+  const entries = await Promise.all(
+    exercises.map(async (ex) => {
+      const info = await getExerciseHistoryAndPB(ex.id, completedSessions);
+      return [ex.id, info] as const;
+    })
+  );
+
+  return Object.fromEntries(entries);
 }
 
 async function buildExerciseBlock(
@@ -394,13 +414,11 @@ export async function swapExerciseInSessionBlock(
   const updatedBlocks = [...session.blocks];
   updatedBlocks[blockIndex] = replacementBlock;
 
-  const updatedSession: WorkoutSession = {
+  await db.sessions.update(sessionId, { blocks: updatedBlocks });
+  return (await db.sessions.get(sessionId)) ?? {
     ...session,
     blocks: updatedBlocks,
   };
-
-  await db.sessions.put(updatedSession);
-  return updatedSession;
 }
 
 export async function setBlockUnilateralMode(
@@ -457,13 +475,11 @@ export async function setBlockUnilateralMode(
   const updatedBlocks = [...session.blocks];
   updatedBlocks[blockIndex] = updatedBlock;
 
-  const updatedSession: WorkoutSession = {
+  await db.sessions.update(sessionId, { blocks: updatedBlocks });
+  return (await db.sessions.get(sessionId)) ?? {
     ...session,
     blocks: updatedBlocks,
   };
-
-  await db.sessions.put(updatedSession);
-  return updatedSession;
 }
 
 export async function updateSetInBlock(
@@ -504,13 +520,11 @@ export async function updateSetInBlock(
     sets: updatedSets,
   };
 
-  const updatedSession: WorkoutSession = {
+  await db.sessions.update(sessionId, { blocks: updatedBlocks });
+  return (await db.sessions.get(sessionId)) ?? {
     ...session,
     blocks: updatedBlocks,
   };
-
-  await db.sessions.put(updatedSession);
-  return updatedSession;
 }
 
 export async function addSetToBlock(
@@ -562,13 +576,11 @@ export async function addSetToBlock(
     sets: [...block.sets, newSet],
   };
 
-  const updatedSession: WorkoutSession = {
+  await db.sessions.update(sessionId, { blocks: updatedBlocks });
+  return (await db.sessions.get(sessionId)) ?? {
     ...session,
     blocks: updatedBlocks,
   };
-
-  await db.sessions.put(updatedSession);
-  return updatedSession;
 }
 
 export async function removeSetFromBlock(
@@ -597,13 +609,11 @@ export async function removeSetFromBlock(
     sets: filteredSets,
   };
 
-  const updatedSession: WorkoutSession = {
+  await db.sessions.update(sessionId, { blocks: updatedBlocks });
+  return (await db.sessions.get(sessionId)) ?? {
     ...session,
     blocks: updatedBlocks,
   };
-
-  await db.sessions.put(updatedSession);
-  return updatedSession;
 }
 
 export async function addExerciseBlockToSession(
@@ -630,13 +640,12 @@ export async function addExerciseBlockToSession(
     overrideUnilateral,
   });
 
-  const updatedSession: WorkoutSession = {
+  const updatedBlocks = [...session.blocks, newBlock];
+  await db.sessions.update(sessionId, { blocks: updatedBlocks });
+  return (await db.sessions.get(sessionId)) ?? {
     ...session,
-    blocks: [...session.blocks, newBlock],
+    blocks: updatedBlocks,
   };
-
-  await db.sessions.put(updatedSession);
-  return updatedSession;
 }
 
 export async function completeWorkoutSession(
@@ -648,13 +657,20 @@ export async function completeWorkoutSession(
     throw new Error(`Session not found: ${sessionId}`);
   }
 
-  const updatedSession: WorkoutSession = {
+  const completedAt = new Date().toISOString();
+  const resolvedNotes =
+    sessionNotes !== undefined ? sessionNotes : session.sessionNotes;
+
+  await db.sessions.update(sessionId, {
+    status: 'completed',
+    completedAt,
+    sessionNotes: resolvedNotes,
+  });
+
+  return (await db.sessions.get(sessionId)) ?? {
     ...session,
     status: 'completed',
-    completedAt: new Date().toISOString(),
-    sessionNotes: sessionNotes !== undefined ? sessionNotes : session.sessionNotes,
+    completedAt,
+    sessionNotes: resolvedNotes,
   };
-
-  await db.sessions.put(updatedSession);
-  return updatedSession;
 }
