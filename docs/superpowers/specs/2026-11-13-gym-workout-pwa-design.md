@@ -230,9 +230,10 @@ On first launch, if the database is empty, the app seeds historical sessions cov
      - Typing filters all exercises in the library with live preview of their last weight/PB.
      - If the typed text doesn't match an existing exercise, a prominent **`+ Use "[Typed Name]" as new exercise`** button creates it immediately (inheriting the current category and set count) and swaps the card to it.
    - Swapping an exercise automatically populates the card's sets with the swapped exercise's most recent logged weights and reps.
-3. **Unilateral L/R Mode:**
-   - Any exercise can toggle **`L/R Unilateral`** on/off right from the card header.
-   - When active, each set row displays `L Reps` and `R Reps` steppers side-by-side (with a subtle `"Start L"` badge and an imbalance indicator if `L !== R`).
+3. **Unilateral / Bilateral Mode Selector (During Workout Logging & Swap/Add):**
+   - When logging a workout, every exercise card features an explicit **Mode Toggle (`Bilateral` vs. `Unilateral L/R`)** in the header (and as an option when adding or swapping an exercise).
+   - Switching a block from Bilateral to Unilateral automatically maps each set's `reps` into `repsLeft` and `repsRight` so no progress is lost; switching from Unilateral to Bilateral maps `Math.min(repsLeft, repsRight)` back into `reps`.
+   - When `Unilateral L/R` is selected, each set row displays `L Reps` and `R Reps` steppers side-by-side (with a `"Start L"` cue badge and an imbalance indicator if `L !== R`).
 4. **Increment Steppers & Plate Math:**
    - Tapping the weight field or `+`/`-` steppers adjusts load by the active step chip (`0.5`, `1.25`, `2.25`, `2.5`, or `5 kg`), plus allows direct numeric keypad entry.
    - On `plate_per_side` exercises (Free-Weight 45° Leg Press), the row shows `65 kg/side` with a live badge `= 197 kg total (incl. 67 kg sled)`.

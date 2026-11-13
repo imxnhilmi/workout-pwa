@@ -273,7 +273,8 @@ git push
   - `db: WorkoutDatabase`
   - `ensureSeeded(): Promise<void>`
   - `startSessionFromTemplate(templateId: 'upper' | 'lower' | 'arms' | 'custom'): Promise<WorkoutSession>`
-  - `swapExerciseInSessionBlock(sessionId: string, blockId: string, targetQueryOrExerciseId: string): Promise<WorkoutSession>`
+  - `swapExerciseInSessionBlock(sessionId: string, blockId: string, targetQueryOrExerciseId: string, overrideUnilateral?: boolean): Promise<WorkoutSession>`
+  - `setBlockUnilateralMode(sessionId: string, blockId: string, isUnilateral: boolean): Promise<WorkoutSession>`
   - `getExerciseHistoryAndPB(exerciseId: string): Promise<{ lastBlock?: WorkoutExerciseBlock; pbWeightKg?: number; pbSummary?: string; readyToProgress: boolean }>`
 
 - [ ] **Step 1: Write failing tests in `src/db/__tests__/database.test.ts`**
@@ -285,7 +286,8 @@ import {
   db,
   ensureSeeded,
   getExerciseHistoryAndPB,
-   startSessionFromTemplate,
+  setBlockUnilateralMode,
+  startSessionFromTemplate,
   swapExerciseInSessionBlock,
 } from '../database';
 
@@ -328,14 +330,31 @@ describe('Dexie WorkoutDatabase, Seeding, and Type-to-Swap', () => {
     expect(swappedExisting.blocks[0].exerciseName).toBe('Cable Chest Press');
     expect(swappedExisting.blocks[0].sets[0].weightKg).toBe(50);
 
-    // Swap by typing a brand-new exercise name on the fly
+    // Swap by typing a brand-new exercise name on the fly with unilateral option enabled
     const swappedNew = await swapExerciseInSessionBlock(
       session.id,
       session.blocks[0].id,
-      'Converging Plate Chest Press'
+      'Converging Plate Chest Press',
+      true
     );
     expect(await db.exercises.count()).toBe(countBefore + 1);
     expect(swappedNew.blocks[0].exerciseName).toBe('Converging Plate Chest Press');
+    expect(swappedNew.blocks[0].isUnilateral).toBe(true);
+  });
+
+  it('allows toggling an active exercise block between Bilateral and Unilateral while preserving set rep counts', async () => {
+    const session = await startSessionFromTemplate('upper');
+    const blockId = session.blocks[0].id; // Incline DB Chest Press (starts bilateral: 7, 7)
+    expect(session.blocks[0].isUnilateral).toBe(false);
+
+    const toggledUni = await setBlockUnilateralMode(session.id, blockId, true);
+    expect(toggledUni.blocks[0].isUnilateral).toBe(true);
+    expect(toggledUni.blocks[0].sets[0].repsLeft).toBe(7);
+    expect(toggledUni.blocks[0].sets[0].repsRight).toBe(7);
+
+    const toggledBi = await setBlockUnilateralMode(session.id, blockId, false);
+    expect(toggledBi.blocks[0].isUnilateral).toBe(false);
+    expect(toggledBi.blocks[0].sets[0].reps).toBe(7);
   });
 
   it('computes PB and Ready to Progress status from seeded history', async () => {
@@ -504,6 +523,15 @@ describe('Gym Workout Tracker PWA UI Integration', () => {
     await waitFor(() => {
       expect(screen.getByText('Converging Chest Press')).toBeInTheDocument();
     });
+
+    // User can toggle between Bilateral and Unilateral L/R mode while logging the workout
+    const unilateralToggles = screen.getAllByRole('button', { name: /Unilateral L\/R/i });
+    fireEvent.click(unilateralToggles[0]);
+
+    await waitFor(() => {
+      expect(screen.getAllByText(/L Reps/i).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/R Reps/i).length).toBeGreaterThan(0);
+    });
   });
 });
 ```
@@ -529,3 +557,4 @@ git add .
 git commit -m "feat: implement mobile-first workout UI, type-to-swap combobox, analytics, and Google Drive backup"
 git push
 ```
+
